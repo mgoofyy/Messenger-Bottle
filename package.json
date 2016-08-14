@@ -1,0 +1,15 @@
+{
+  "name": "mgoofyy",
+  "version": "0.0.1",
+  "description": "no des",
+  "main": "node app.js",
+  "scripts": {
+    "test": "node app.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+  "express":"^3.4.4",
+  "redis":"*"
+  }
+}
