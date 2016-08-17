@@ -1,6 +1,7 @@
 var redis = require('redis');
 var client = redis.createClient();
 var client2 = redis.createClient();
+var client3 = redis.createClient();
 
 exports.throw = function(bottle,callback) {
 
@@ -46,22 +47,41 @@ exports.throw = function(bottle,callback) {
 };
 
 exports.picks = function(info,callback) {
-	
-	client.SELECT('all',function(){
+		
+		//选择REDIS 3数据表
+		client3.SELECT(3,function(){
+			 client3.GET(info.owner,function(err,result){
+			 	if (result > 10) {
+			 		return callback({
+			 			'code':'1',
+			 			'msg':'你今天的瓶子已经用完了',
+			 			'method':'POST'
+			 		});	
+			 	}
 
-		//
+			 	client3.INCR(info.owner,function(){
+				console.log("已经设置瓶子的有效期");
+				client3.TTL(info.owner,function(err,ttl){
+					if (ttl == -1) {
+						//设置瓶子的生存时间
+						client3.EXPIRE(info.owner,86400);
+					}
+					console.log(ttl);
+				});
+			});
+
+			 });
+		});
+
 		//一定几率捞取到海星
-		//
 		if (Math.random() <= 0.2) {
 			return callback({'code':'0','msg':'获取了海星','method':'POST'});
 		}
-
+		
 		var type = {all:Math.round(Math.random()), male:0 ,female:1};
 
 		info.type = info.type || 'all';
 
-		console.log(info);
-		
 		client.SELECT(type[info.type],function(){
 			 
 			client.RANDOMKEY(function(err,bottleId){
@@ -79,7 +99,6 @@ exports.picks = function(info,callback) {
 			
 			});
 		});	
-	});
 };
 
 exports.throwBack = function(bottle,callback) {
