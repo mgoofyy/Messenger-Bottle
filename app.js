@@ -50,6 +50,22 @@ app.get('/pick',function(req,res){
 			});
 });
 
-
+app.post('/throwBack',function(req,res){
+	console.log("======================" + req.body.bottle);
+	if (!req.body.bottle) {
+		res.json({
+			'code':'0',
+			'msg':'请求数据不正确',
+			'method':'post'
+		});
+	}
+	redis.throwBack(req.body.bottle,function(result){
+		res.json({
+			'code':'1',
+			'msg':result,
+			'method':'post'
+		});
+	});
+});
 
 app.listen(3000);

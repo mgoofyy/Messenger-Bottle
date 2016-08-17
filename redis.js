@@ -2,6 +2,26 @@ var redis = require('redis');
 var client = redis.createClient();
 
 exports.throw = function(bottle,callback) {
+
+	client.SELECT(2,function(){
+		client.GET(bottle.owner,function(err,result){
+			if (result > 10) {
+				return callback({
+					'code':'0',
+					'msg' : '当前瓶子已经用完',
+					'method':'POST'
+				});
+			}
+			client.INCR(bottle.owner,function(){
+				client.TTL(bottle.owner,function(err,ttl){
+					if (ttl == 1) {
+						client.EXPIRE(bottle.owner,86400);
+					}
+				});
+			});
+		});
+	});
+
 	bottle.time = bottle.time || Date.now();
 	var bottleId = Math.random().toString(16);
 	var type = {male:0,female:1};
@@ -22,11 +42,10 @@ exports.throw = function(bottle,callback) {
 exports.picks = function(info,callback) {
 	
 	client.SELECT('all',function(){
+
 		//
 		//一定几率捞取到海星
 		//
-		//
-		// var type = {all:info.type}
 		if (Math.random() <= 0.2) {
 			return callback({'code':'0','msg':'获取了海星','method':'POST'});
 		}
@@ -53,8 +72,31 @@ exports.picks = function(info,callback) {
 				});
 			
 			});
-		});
-
-		
+		});	
 	});
 };
+
+exports.throwBack = function(bottle,callback) {
+	var type = { male:0, female:1 };
+
+	var bottleId = Math.random().toString(16);
+	client.SELECT(type[bottle.type],function(){
+		client.HMSET(bottleId,bottle,function(error,result){
+			console.log(error + ' ======= ' + bottle.type + bottle.time  + result + '   ' + bottleId);
+			if (error) {
+				return callback({
+								'code':'0',
+								'msg':'等会再试一下',
+								'err':error
+								});
+			}
+			callback({
+					'code':'1',
+					'msg':result
+					});
+			var time = bottle.time + 86400000 - Date.now();
+			// console.log(typeof(time));
+			client.PEXPIRE("bottleId",time.toString());
+		});
+	});
+}
