@@ -1,10 +1,11 @@
 var redis = require('redis');
 var client = redis.createClient();
+var client2 = redis.createClient();
 
 exports.throw = function(bottle,callback) {
 
-	client.SELECT(2,function(){
-		client.GET(bottle.owner,function(err,result){
+	client2.SELECT(2,function(){
+		client2.GET(bottle.owner,function(err,result){
 			if (result > 10) {
 				return callback({
 					'code':'0',
@@ -12,11 +13,16 @@ exports.throw = function(bottle,callback) {
 					'method':'POST'
 				});
 			}
-			client.INCR(bottle.owner,function(){
-				client.TTL(bottle.owner,function(err,ttl){
-					if (ttl == 1) {
-						client.EXPIRE(bottle.owner,86400);
+			client2.INCR(bottle.owner,function(){
+				console.log("已经设置瓶子的有效期");
+				client2.TTL(bottle.owner,function(err,ttl){
+					if (ttl == -1) {
+						//设置瓶子的生存时间
+						//
+						
+						client2.EXPIRE(bottle.owner,86400);
 					}
+					console.log(ttl);
 				});
 			});
 		});
@@ -32,7 +38,7 @@ exports.throw = function(bottle,callback) {
 			if (err) {
 				return callback({'code':'0','msg':'过一会再试','method':'POST'});
 			}
-			callback({'code':'1','msg':'保存成功','method':'POST'});
+			callback({'code':'1','msg':'保存成功','method':'POST','bottle':bottle});
 			client.EXPIRE(bottleId,86400);
 		});
 	});
